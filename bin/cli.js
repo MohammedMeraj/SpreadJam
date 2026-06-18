@@ -5,6 +5,7 @@ import pc from 'picocolors';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
+import readline from 'readline';
 import { initConfig, readConfig, updateConfig } from '../lib/config.js';
 import * as api from '../lib/api.js';
 
@@ -27,11 +28,87 @@ function actionWrapper(fn) {
   };
 }
 
+function showInitMenu() {
+  return new Promise((resolve) => {
+    if (!process.stdin.isTTY) {
+      console.log(pc.cyan('\nUseful links:'));
+      console.log(`- Learn to bind spreadsheet API: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md')}`);
+      console.log(`- How it works: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md')}`);
+      console.log(`- Sheet operations: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md')}`);
+      return resolve();
+    }
+
+    const items = [
+      { name: 'Learn to bind spreadsheet API', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md' },
+      { name: 'How it works', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md' },
+      { name: 'Sheet operations', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md' },
+      { name: 'Exit', url: null }
+    ];
+
+    let selectedIndex = 0;
+
+    function render() {
+      console.log(pc.cyan('Use Arrow keys (Up/Down) to navigate, Enter to open in browser:'));
+      items.forEach((item, idx) => {
+        if (idx === selectedIndex) {
+          console.log(` ${pc.green('➔')} ${pc.bold(pc.white(item.name))} ${item.url ? pc.gray(`(${item.url})`) : ''}`);
+        } else {
+          console.log(`   ${pc.gray(item.name)}`);
+        }
+      });
+    }
+
+    readline.emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
+    render();
+
+    function onKeypress(str, key) {
+      if (key.ctrl && key.name === 'c') {
+        cleanup();
+        process.exit();
+      }
+
+      if (key.name === 'up') {
+        selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+        readline.moveCursor(process.stdout, 0, -(items.length + 1));
+        render();
+      } else if (key.name === 'down') {
+        selectedIndex = (selectedIndex + 1) % items.length;
+        readline.moveCursor(process.stdout, 0, -(items.length + 1));
+        render();
+      } else if (key.name === 'return') {
+        cleanup();
+        const chosen = items[selectedIndex];
+        if (chosen.url) {
+          console.log(pc.green(`\nOpening: ${chosen.url}`));
+          const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+          exec(`${start} ${chosen.url}`);
+        } else {
+          console.log(pc.gray('\nExited menu.'));
+        }
+        resolve();
+      }
+    }
+
+    function cleanup() {
+      process.stdin.removeListener('keypress', onKeypress);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+    }
+
+    process.stdin.on('keypress', onKeypress);
+    process.stdin.resume();
+  });
+}
+
 // spreadjam init
 program
   .command('init')
   .description('Initialize a new local .spreadjam repository')
   .action(actionWrapper(async () => {
+    const targetDir = initConfig();
+    console.log(pc.green(`Initialized empty spreadjam repository in ${pc.bold(targetDir)}\n`));
+
     const breadLogo =
       pc.yellow('       .---------------. \n') +
       pc.yellow('      /  ') + pc.white('.-----------.') + pc.yellow('  \\ \n') +
@@ -45,8 +122,8 @@ program
       '\n' +
       `       ${pc.white('S P R E A D')} ${pc.red('J A M')}\n`;
     console.log(breadLogo);
-    const targetDir = initConfig();
-    console.log(pc.green(`Initialized empty spreadjam repository in ${pc.bold(targetDir)}`));
+
+    await showInitMenu();
   }));
 
 // spreadjam config
