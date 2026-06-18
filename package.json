@@ -1,0 +1,27 @@
+{
+  "name": "spreadjam",
+  "version": "1.0.4",
+  "description": "A Git-like CLI for Google Sheets",
+  "main": "bin/cli.js",
+  "type": "module",
+  "bin": {
+    "spreadjam": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "google-sheets",
+    "cli",
+    "sheets",
+    "database"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "googleapis": "^140.0.0",
+    "picocolors": "^1.0.1"
+  }
+}
