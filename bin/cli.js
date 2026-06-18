@@ -35,23 +35,26 @@ function showInitMenu() {
       console.log(`- Learn to bind spreadsheet API: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md')}`);
       console.log(`- How it works: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md')}`);
       console.log(`- Sheet operations: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md')}`);
+      console.log(`- Developer: ${pc.underline('https://github.com/MohammedMeraj')}`);
       return resolve();
     }
 
     const items = [
-      { name: 'Learn to bind spreadsheet API', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md' },
-      { name: 'How it works', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md' },
-      { name: 'Sheet operations', url: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md' },
-      { name: 'Exit', url: null }
+      { name: 'Learn to bind spreadsheet API', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md' },
+      { name: 'How it works', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md' },
+      { name: 'Sheet operations', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md' },
+      { name: 'Help', action: 'help' },
+      { name: 'Developer', action: 'url', target: 'https://github.com/MohammedMeraj' }
     ];
 
     let selectedIndex = 0;
 
     function render() {
-      console.log(pc.cyan('Use Arrow keys (Up/Down) to navigate, Enter to open in browser:'));
+      console.log(pc.cyan('Use Arrow keys (Up/Down) to navigate, Enter to select:'));
       items.forEach((item, idx) => {
         if (idx === selectedIndex) {
-          console.log(` ${pc.green('➔')} ${pc.bold(pc.white(item.name))} ${item.url ? pc.gray(`(${item.url})`) : ''}`);
+          const suffix = item.target ? pc.gray(`(${item.target})`) : '';
+          console.log(` ${pc.green('➔')} ${pc.bold(pc.white(item.name))} ${suffix}`);
         } else {
           console.log(`   ${pc.gray(item.name)}`);
         }
@@ -79,12 +82,13 @@ function showInitMenu() {
       } else if (key.name === 'return') {
         cleanup();
         const chosen = items[selectedIndex];
-        if (chosen.url) {
-          console.log(pc.green(`\nOpening: ${chosen.url}`));
+        if (chosen.action === 'url') {
+          console.log(pc.green(`\nOpening: ${chosen.target}`));
           const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-          exec(`${start} ${chosen.url}`);
-        } else {
-          console.log(pc.gray('\nExited menu.'));
+          exec(`${start} ${chosen.target}`);
+        } else if (chosen.action === 'help') {
+          console.log('');
+          program.outputHelp();
         }
         resolve();
       }
