@@ -13,8 +13,15 @@ const program = new Command();
 
 program
   .name('spreadjam')
-  .description('A Git-like CLI for Google Sheets')
-  .version('1.0.0');
+  .description('A CLI for Google Sheets')
+  .version('1.0.0')
+  .addHelpText('after', `
+${pc.cyan('Useful Links:')}
+  Learn to bind spreadsheet API: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md')}
+  How it works:                 ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md')}
+  Sheet operations:             ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md')}
+  Developer:                    ${pc.underline('https://github.com/MohammedMeraj')}
+`);
 
 // Catch-all error wrapper for commands
 function actionWrapper(fn) {
