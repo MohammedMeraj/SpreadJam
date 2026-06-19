@@ -1,26 +1,42 @@
-# spreadjam 🥖🍯
+# spreadjam
 
 `spreadjam` is a command-line interface (CLI) for Google Sheets that allows you to manage spreadsheet data as if they were database tables directly from your terminal.
 
 ---
 
-## 📖 What it is
+## What it is
 
 `spreadjam` bridges the gap between terminal productivity and cloud spreadsheets. It allows you to interact with Google Sheets using simple CLI commands to query, insert, and delete rows, columns, and tabs (sheets).
 
 ---
 
-## 🛠️ How it Works
+## How it Works
 
 `spreadjam` maintains a hidden metadata folder (`.spreadjam`) in your project's working directory containing:
 1. **Target Spreadsheet ID**: The ID of the Google Sheet you want to read/write.
 2. **Google Service Account Credentials**: Secure private key JSON credentials to authorize API requests.
 
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 23 13 AM" src="https://github.com/user-attachments/assets/9623fbb1-5361-4aee-bbd6-b190f3d15155" />
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 23 36 AM" src="https://github.com/user-attachments/assets/9ec36763-d9d3-4d76-80b1-feda49af4fcd" />
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 24 23 AM" src="https://github.com/user-attachments/assets/d99438fb-67e2-4846-ad76-ed6756be1bb9" />
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 24 42 AM" src="https://github.com/user-attachments/assets/4617946c-7d03-49c4-94f6-04ede5d8404d" />
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 25 23 AM" src="https://github.com/user-attachments/assets/e3936d15-cfe9-4972-bf12-13f59db21378" />
+<img width="1423" height="799" alt="Screenshot 2026-06-19 at 10 26 53 AM" src="https://github.com/user-attachments/assets/cda67922-08ca-4884-ab99-3b05d8895eb5" />
+
+<img width="953" height="596" alt="image" src="https://github.com/user-attachments/assets/54d49653-a466-4238-8d94-508bdb5a45c1" />
+
+
+
 Every execution searches upwards from your current directory to locate the `.spreadjam` configuration folder and automatically sends authorized requests to the Google Sheets API.
 
 ---
+## Setup & API Credentials
 
-## 🚀 How it Helps in Spreadsheet Management
+To obtain Google Sheets API credentials and configure `spreadjam`, follow the step-by-step instructions in [how_to_add_api.md](how_to_add_api.md).
+
+---
+
+## How it Helps in Spreadsheet Management
 
 - **Simple Initialization & Configuration**: Initialize a spreadsheet connection using `spreadjam init`, customize credentials with `spreadjam config`, and verify connections with `spreadjam status`.
 - **Keyboard-driven workflow**: Avoid leaving the terminal to inspect columns, append logs, or delete sheets.
@@ -30,7 +46,7 @@ Every execution searches upwards from your current directory to locate the `.spr
 
 ---
 
-## 📌 Command Reference
+## Command Reference
 
 For a complete and detailed breakdown of each command with multiple examples, see [sheet_operations.md](sheet_operations.md).
 
@@ -58,6 +74,4 @@ For a complete and detailed breakdown of each command with multiple examples, se
 
 ---
 
-## 🔑 Setup & API Credentials
 
-To obtain Google Sheets API credentials and configure `spreadjam`, follow the step-by-step instructions in [how_to_add_api.md](how_to_add_api.md).
