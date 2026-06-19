@@ -1,6 +1,6 @@
 {
   "name": "spreadjam",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "A Git-like CLI for Google Sheets",
   "main": "bin/cli.js",
   "type": "module",
