@@ -25,6 +25,9 @@
 
 <img width="953" height="596" alt="image" src="https://github.com/user-attachments/assets/54d49653-a466-4238-8d94-508bdb5a45c1" />
 
+<img width="919" height="273" alt="image" src="https://github.com/user-attachments/assets/795d79ec-5a6e-406f-8c74-e22719613aa1" />
+
+
 Every execution searches upwards from your current directory to locate the `.spreadjam` configuration folder and automatically sends authorized requests to the Google Sheets API.
 ---
 
