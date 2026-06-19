@@ -25,9 +25,73 @@
 
 <img width="953" height="596" alt="image" src="https://github.com/user-attachments/assets/54d49653-a466-4238-8d94-508bdb5a45c1" />
 
-
-
 Every execution searches upwards from your current directory to locate the `.spreadjam` configuration folder and automatically sends authorized requests to the Google Sheets API.
+---
+
+# Installation
+
+## macOS / Linux
+
+Install SpreadJam globally:
+
+```bash
+npm install -g spreadjam
+```
+
+If you receive a permission denied (`EACCES`) error:
+
+```bash
+sudo npm install -g spreadjam
+```
+
+Enter your system password when prompted.
+
+Verify the installation:
+
+```bash
+spreadjam --version
+```
+
+---
+
+## Windows (Command Prompt or PowerShell)
+
+Install SpreadJam globally:
+
+```powershell
+npm install -g spreadjam
+```
+
+If you receive a permissions error, open **Command Prompt** or **PowerShell** as **Administrator** and run:
+
+```powershell
+npm install -g spreadjam
+```
+
+Verify the installation:
+
+```powershell
+spreadjam --version
+```
+
+---
+
+## Troubleshooting
+
+Check that Node.js and npm are installed:
+
+```bash
+node --version
+npm --version
+```
+
+If `spreadjam` is not recognized after installation, restart your terminal and try:
+
+```bash
+spreadjam --version
+```
+
+
 
 ---
 ## Setup & API Credentials
