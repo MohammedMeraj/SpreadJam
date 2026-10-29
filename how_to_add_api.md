@@ -46,21 +46,37 @@ To use `spreadjam`, you must connect it to the Google Sheets API using a Google 
 
 ---
 
-## Step 5: Connect and Share Google Sheet
+## Step 5: Get the Spreadsheet ID
 
 1.  Create a new spreadsheet at [sheets.new](https://sheets.new) or open an existing one.
 2.  Look at the URL of your Google Sheet. It will look like this:
     `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit#gid=0`
-    Copy the `SPREADSHEET_ID` part (a long string of characters).
-3.  Click the **Share** button in the top-right corner of Google Sheets.
-4.  Paste the **Service Account email address** (found in the JSON file as `client_email`, e.g., `spreadjam-service-account@...iam.gserviceaccount.com`).
-5.  Set permissions to **Editor** and click **Share** (uncheck "Notify people" if desired).
+3.  Copy the `SPREADSHEET_ID` part: the long string of characters between `/d/` and `/edit`.
 
 ---
 
-## Step 6: Configure spreadjam in Terminal
+## Step 6: Share the Sheet with the Service Account (Editor access)
+
+`spreadjam` can only read or write a sheet that has been shared with the service account. If you see a *permission denied* / *403* error, this step is missing.
+
+1.  Open the `.json` key file and copy the `client_email` value (e.g. `spreadjam-service-account@...iam.gserviceaccount.com`).
+2.  In Google Sheets, click the **Share** button in the top-right corner.
+3.  Paste the service account email.
+4.  Set the role to **Editor** (Viewer cannot write) and click **Share** (uncheck "Notify people" if desired).
+
+*Alternative:* in the same Share dialog, under **General access**, choose **Anyone with the link** and set the role to **Editor**. This works without adding the email, but anyone with the link can edit the sheet, so sharing with the service account email is recommended.
+
+---
+
+## Step 7: Configure spreadjam in Terminal
 
 Now, navigate to your local repository directory where you initialized `spreadjam init`, and run:
+
+```bash
+spreadjam config
+```
+
+It asks for the path to the service account JSON file (Step 4) and the Spreadsheet ID (Step 5). You can also pass them directly:
 
 ```bash
 spreadjam config --credentials /path/to/your/downloaded-key.json --spreadsheet YOUR_SPREADSHEET_ID

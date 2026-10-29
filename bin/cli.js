@@ -4,10 +4,121 @@ import { Command } from 'commander';
 import pc from 'picocolors';
 import fs from 'fs';
 import path from 'path';
+import readline from 'readline/promises';
 import { exec } from 'child_process';
-import readline from 'readline';
 import { initConfig, readConfig, updateConfig } from '../lib/config.js';
 import * as api from '../lib/api.js';
+import { explainError, credentialsHelp, spreadsheetIdHelp, shareHelp, link, DOCS } from '../lib/docs.js';
+
+/**
+ * Resolves an auto date/time setting: explicit CLI flag wins, then the saved
+ * config value, then the built-in default (enabled).
+ */
+function resolveAuto(flag, key) {
+  if (typeof flag === 'boolean') return flag;
+  const saved = readConfig()[key];
+  return typeof saved === 'boolean' ? saved : true;
+}
+
+function parseOnOff(value, name) {
+  const v = String(value).toLowerCase();
+  if (['on', 'true', 'yes', '1'].includes(v)) return true;
+  if (['off', 'false', 'no', '0'].includes(v)) return false;
+  throw new Error(`fatal: --${name} expects on or off (got "${value}").`);
+}
+
+/** Reads and validates a service account JSON file, returning the parsed credentials. */
+function loadCredentialsFile(file) {
+  const credPath = path.resolve(file.trim().replace(/^['"]|['"]$/g, '').replace(/^~(?=$|\/)/, process.env.HOME || '~'));
+  if (!fs.existsSync(credPath)) {
+    throw new Error(`fatal: credentials file not found at path: ${credPath}`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+  } catch (err) {
+    throw new Error(`fatal: failed to parse service account JSON file: ${err.message}`);
+  }
+  if (!parsed.client_email || !parsed.private_key) {
+    throw new Error('fatal: failed to parse service account JSON file: JSON is missing "client_email" or "private_key" fields.');
+  }
+  return parsed;
+}
+
+/** Accepts a bare Spreadsheet ID or a full Google Sheets URL. */
+function extractSpreadsheetId(input) {
+  const m = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return (m ? m[1] : input).trim();
+}
+
+function isSetupComplete(config) {
+  return !!(config.credentials && config.spreadsheetId);
+}
+
+/** Prints what is missing and how to fix it (used when stdin is not interactive). */
+function printSetupGuide(config) {
+  console.log(pc.yellow('Setup incomplete.\n'));
+  if (!config.credentials) {
+    console.log(`${pc.red('✗')} Service account credentials missing`);
+    console.log(`  ${credentialsHelp()}`);
+    console.log('  Then run: spreadjam config --credentials <path-to-json>\n');
+  }
+  if (!config.spreadsheetId) {
+    console.log(`${pc.red('✗')} Spreadsheet ID missing`);
+    console.log(`  ${spreadsheetIdHelp()}`);
+    console.log('  Then run: spreadjam config --spreadsheet <id>\n');
+  }
+}
+
+/** Interactive first-time setup: asks only for what is still missing, with a docs link for each. */
+async function runSetupWizard(config) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log(pc.cyan('Let\'s finish setting up spreadjam. (Press Enter on an empty answer to cancel.)\n'));
+    const updates = {};
+
+    if (!config.credentials) {
+      console.log(pc.bold('Step 1: Service account JSON file'));
+      console.log(`  ${credentialsHelp()}`);
+      while (true) {
+        const answer = (await rl.question('  Path to the service account JSON file: ')).trim();
+        if (!answer) { console.log(pc.yellow('Setup cancelled.')); return; }
+        try {
+          updates.credentials = loadCredentialsFile(answer);
+          break;
+        } catch (err) {
+          console.log(pc.red(`  ${err.message}`));
+        }
+      }
+      console.log(pc.green(`  Saved credentials for ${updates.credentials.client_email}\n`));
+      updateConfig(updates);
+    }
+
+    if (!config.spreadsheetId) {
+      console.log(pc.bold('Step 2: Spreadsheet ID'));
+      console.log(`  ${spreadsheetIdHelp()}`);
+      const answer = (await rl.question('  Spreadsheet ID (or full sheet URL): ')).trim();
+      if (!answer) { console.log(pc.yellow('Setup cancelled.')); return; }
+      updates.spreadsheetId = extractSpreadsheetId(answer);
+      updateConfig({ spreadsheetId: updates.spreadsheetId });
+      console.log(pc.green('  Saved Spreadsheet ID\n'));
+    }
+
+    const creds = updates.credentials || config.credentials;
+    const email = typeof creds === 'string' ? JSON.parse(creds).client_email : creds.client_email;
+    console.log(pc.bold('Last step: give the service account access to your sheet'));
+    console.log(`  ${shareHelp(email).replace(/\n/g, '\n  ')}\n`);
+    console.log(`Then run ${pc.bold('spreadjam status')} to test the connection.`);
+  } catch (err) {
+    if (err && (err.name === 'AbortError' || err.code === 'ABORT_ERR')) {
+      console.log(pc.yellow('\nSetup cancelled.'));
+      return;
+    }
+    throw err;
+  } finally {
+    rl.close();
+  }
+}
 
 const program = new Command();
 
@@ -29,87 +140,12 @@ function actionWrapper(fn) {
     try {
       await fn(...args);
     } catch (err) {
-      console.error(pc.red(err.message));
+      let config = null;
+      try { config = readConfig(); } catch (e) { /* not in a repo */ }
+      console.error(explainError(err, config));
       process.exit(1);
     }
   };
-}
-
-function showInitMenu() {
-  return new Promise((resolve) => {
-    if (!process.stdin.isTTY) {
-      console.log(pc.cyan('\nUseful links:'));
-      console.log(`- Learn to bind spreadsheet API: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md')}`);
-      console.log(`- How it works: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md')}`);
-      console.log(`- Sheet operations: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md')}`);
-      console.log(`- Developer: ${pc.underline('https://github.com/MohammedMeraj')}`);
-      return resolve();
-    }
-
-    const items = [
-      { name: 'Learn to bind spreadsheet API', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md' },
-      { name: 'How it works', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/how_it_works.md' },
-      { name: 'Sheet operations', action: 'url', target: 'https://github.com/MohammedMeraj/SpreadJam/blob/main/sheet_operations.md' },
-      { name: 'Help', action: 'help' },
-      { name: 'Developer', action: 'url', target: 'https://github.com/MohammedMeraj' }
-    ];
-
-    let selectedIndex = 0;
-
-    function render() {
-      console.log(pc.cyan('Use Arrow keys (Up/Down) to navigate, Enter to select:'));
-      items.forEach((item, idx) => {
-        if (idx === selectedIndex) {
-          const suffix = item.target ? pc.gray(`(${item.target})`) : '';
-          console.log(` ${pc.green('➔')} ${pc.bold(pc.white(item.name))} ${suffix}`);
-        } else {
-          console.log(`   ${pc.gray(item.name)}`);
-        }
-      });
-    }
-
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
-    render();
-
-    function onKeypress(str, key) {
-      if (key.ctrl && key.name === 'c') {
-        cleanup();
-        process.exit();
-      }
-
-      if (key.name === 'up') {
-        selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-        readline.moveCursor(process.stdout, 0, -(items.length + 1));
-        render();
-      } else if (key.name === 'down') {
-        selectedIndex = (selectedIndex + 1) % items.length;
-        readline.moveCursor(process.stdout, 0, -(items.length + 1));
-        render();
-      } else if (key.name === 'return') {
-        cleanup();
-        const chosen = items[selectedIndex];
-        if (chosen.action === 'url') {
-          console.log(pc.green(`\nOpening: ${chosen.target}`));
-          const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-          exec(`${start} ${chosen.target}`);
-        } else if (chosen.action === 'help') {
-          console.log('');
-          program.outputHelp();
-        }
-        resolve();
-      }
-    }
-
-    function cleanup() {
-      process.stdin.removeListener('keypress', onKeypress);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-    }
-
-    process.stdin.on('keypress', onKeypress);
-    process.stdin.resume();
-  });
 }
 
 // spreadjam init
@@ -134,7 +170,7 @@ program
       `       ${pc.white('S P R E A D')} ${pc.red('J A M')}\n`;
     console.log(breadLogo);
 
-    await showInitMenu();
+    program.outputHelp();
   }));
 
 // spreadjam config
@@ -143,10 +179,20 @@ program
   .description('Configure Google Sheets API credentials and Spreadsheet ID')
   .option('--credentials <path>', 'Path to Google Service Account JSON file')
   .option('--spreadsheet <id>', 'Target Google Spreadsheet ID')
+  .option('--autodate <on|off>', 'Default: automatically fill the date column when adding rows')
+  .option('--autotime <on|off>', 'Default: automatically fill the time column when adding rows')
   .action(actionWrapper(async (options) => {
     // If no arguments provided, display current configuration
-    if (!options.credentials && !options.spreadsheet) {
+    if (!options.credentials && !options.spreadsheet && !options.autodate && !options.autotime) {
       const config = readConfig();
+      if (!isSetupComplete(config)) {
+        if (process.stdin.isTTY) {
+          await runSetupWizard(config);
+        } else {
+          printSetupGuide(config);
+        }
+        return;
+      }
       console.log(pc.cyan('Current spreadjam configuration:'));
       console.log(`${pc.bold('Spreadsheet ID:')} ${config.spreadsheetId || pc.yellow('Not configured')}`);
       
@@ -160,6 +206,9 @@ program
         }
       }
       console.log(`${pc.bold('Credentials (Service Account):')} ${email}`);
+      const fmt = (v) => (v === false ? pc.yellow('off') : pc.green('on'));
+      console.log(`${pc.bold('Auto date (default):')} ${fmt(config.autodate)}`);
+      console.log(`${pc.bold('Auto time (default):')} ${fmt(config.autotime)}`);
       return;
     }
 
@@ -168,26 +217,26 @@ program
       updates.spreadsheetId = options.spreadsheet;
     }
 
+    if (options.autodate) {
+      updates.autodate = parseOnOff(options.autodate, 'autodate');
+    }
+    if (options.autotime) {
+      updates.autotime = parseOnOff(options.autotime, 'autotime');
+    }
+
     if (options.credentials) {
-      const credPath = path.resolve(options.credentials);
-      if (!fs.existsSync(credPath)) {
-        throw new Error(`fatal: credentials file not found at path: ${credPath}`);
-      }
-      try {
-        const fileContent = fs.readFileSync(credPath, 'utf8');
-        // Parse to validate JSON
-        const parsed = JSON.parse(fileContent);
-        if (!parsed.client_email || !parsed.private_key) {
-          throw new Error('JSON is missing "client_email" or "private_key" fields.');
-        }
-        updates.credentials = parsed;
-      } catch (err) {
-        throw new Error(`fatal: failed to parse service account JSON file: ${err.message}`);
-      }
+      updates.credentials = loadCredentialsFile(options.credentials);
     }
 
     updateConfig(updates);
     console.log(pc.green('Configuration updated successfully.'));
+    const merged = readConfig();
+    if (!isSetupComplete(merged)) {
+      printSetupGuide(merged);
+    } else if (updates.credentials || updates.spreadsheetId) {
+      const email = updates.credentials ? updates.credentials.client_email : (typeof merged.credentials === 'string' ? JSON.parse(merged.credentials).client_email : merged.credentials.client_email);
+      console.log(`\nMake sure the sheet is shared with ${pc.bold(email)} as ${pc.bold('Editor')}: ${link(DOCS.share)}`);
+    }
   }));
 
 // spreadjam status
@@ -276,8 +325,10 @@ rowCmd
   .command('add [args...]')
   .description('Add a new row (e.g. `spreadjam row add val1 val2` or `spreadjam row add col1=val1 col2=val2`)')
   .option('-s, --sheet <name>', 'Specific sheet (tab) name')
-  .option('--autodate', 'Automatically add/fill date column')
-  .option('--autotime', 'Automatically add/fill time column')
+  .option('--autodate', 'Force auto date column on (default: on, see `spreadjam config --autodate`)')
+  .option('--no-autodate', 'Skip the auto date column for this row')
+  .option('--autotime', 'Force auto time column on (default: on, see `spreadjam config --autotime`)')
+  .option('--no-autotime', 'Skip the auto time column for this row')
   .action(actionWrapper(async (args, options) => {
     if ((!args || args.length === 0) && !options.autodate && !options.autotime) {
       throw new Error('fatal: No data provided. Provide values (e.g. `spreadjam row add val1 val2`) or key-values (e.g. `spreadjam row add name=Alice age=20`).');
@@ -309,8 +360,8 @@ rowCmd
 
     console.log(pc.cyan('Adding row...'));
     const result = await api.addRow(data, options.sheet, {
-      autodate: !!options.autodate,
-      autotime: !!options.autotime
+      autodate: resolveAuto(options.autodate, 'autodate'),
+      autotime: resolveAuto(options.autotime, 'autotime')
     });
     console.log(pc.green(`Success: Added row to sheet "${pc.bold(result.title)}" with values:`));
     console.log(pc.gray(JSON.stringify(result.values)));
@@ -323,8 +374,10 @@ addCmd
   .command('row [args...]')
   .description('Add a new row to the sheet (e.g. `spreadjam add row "value1" "value2"`)')
   .option('-s, --sheet <name>', 'Specific sheet (tab) name')
-  .option('--autodate', 'Automatically add/fill date column')
-  .option('--autotime', 'Automatically add/fill time column')
+  .option('--autodate', 'Force auto date column on (default: on, see `spreadjam config --autodate`)')
+  .option('--no-autodate', 'Skip the auto date column for this row')
+  .option('--autotime', 'Force auto time column on (default: on, see `spreadjam config --autotime`)')
+  .option('--no-autotime', 'Skip the auto time column for this row')
   .action(actionWrapper(async (args, options) => {
     if ((!args || args.length === 0) && !options.autodate && !options.autotime) {
       throw new Error('fatal: No data provided. Provide values or enable auto-date/time options.');
@@ -354,8 +407,8 @@ addCmd
 
     console.log(pc.cyan('Adding row...'));
     const result = await api.addRow(data, options.sheet, {
-      autodate: !!options.autodate,
-      autotime: !!options.autotime
+      autodate: resolveAuto(options.autodate, 'autodate'),
+      autotime: resolveAuto(options.autotime, 'autotime')
     });
     console.log(pc.green(`Success: Added row to sheet "${pc.bold(result.title)}" with values:`));
     console.log(pc.gray(JSON.stringify(result.values)));

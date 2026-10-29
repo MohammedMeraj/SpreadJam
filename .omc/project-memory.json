@@ -1,0 +1,84 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1793256110406,
+  "projectRoot": "/Users/dsvcorp/meraj/FlutterDev/projects/spreadjam/SpreadJam",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "npm test",
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    }
+  },
+  "conventions": {
+    "namingStyle": "camelCase",
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "bin",
+      "lib"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "bin": {
+      "path": "bin",
+      "purpose": "Executable scripts",
+      "fileCount": 1,
+      "lastAccessed": 1793256110385,
+      "keyFiles": [
+        "cli.js"
+      ]
+    },
+    "lib": {
+      "path": "lib",
+      "purpose": "Library code",
+      "fileCount": 2,
+      "lastAccessed": 1793256110386,
+      "keyFiles": [
+        "api.js",
+        "config.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "bin/cli.js",
+      "accessCount": 3,
+      "lastAccessed": 1793256327847,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1793256124724,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

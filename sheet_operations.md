@@ -61,8 +61,9 @@ spreadjam add col <column_name> [-s <sheet_name>]
 Append a new row of data. You can pass positional arguments corresponding to the order of columns, or pass key=value pairs.
 
 ### Options
-- `--autodate`: Automatically add the current date (format: `DD-MM-YYYY`). If a column named `date` (case-insensitive) does not exist, it will be created automatically.
-- `--autotime`: Automatically add the current time (format: `HH:MM:SS`). If a column named `time` (case-insensitive) does not exist, it will be created automatically.
+- `--autodate`: **On by default.** Automatically add the current date (format: `DD-MM-YYYY`). If a column named `date` (case-insensitive) does not exist, it will be created automatically. Use `--no-autodate` to skip it for one row.
+- `--autotime`: **On by default.** Automatically add the current time (format: `HH:MM:SS`). If a column named `time` (case-insensitive) does not exist, it will be created automatically. Use `--no-autotime` to skip it for one row.
+- Change the defaults permanently with `spreadjam config --autodate <on|off>` and `spreadjam config --autotime <on|off>`; run `spreadjam config` to see current values.
 
 ### Usage
 ```bash

@@ -108,7 +108,7 @@ To obtain Google Sheets API credentials and configure `spreadjam`, follow the st
 - **Simple Initialization & Configuration**: Initialize a spreadsheet connection using `spreadjam init`, customize credentials with `spreadjam config`, and verify connections with `spreadjam status`.
 - **Keyboard-driven workflow**: Avoid leaving the terminal to inspect columns, append logs, or delete sheets.
 - **Ultra-minimal Syntax**: Retrieve columns in one line via `spreadjam list columns`, add rows with space-separated positional values, and view data instantly with `spreadjam show data`.
-- **Automatic Column Creation**: Enable `--autodate` and `--autotime` flags when adding rows, and `spreadjam` will automatically create `date` and `time` columns if they don't exist and fill them with the current timestamp.
+- **Automatic Date & Time (on by default)**: Every added row automatically gets the current date and time; `spreadjam` creates the `date` and `time` columns if they don't exist. Skip them for one row with `--no-autodate` / `--no-autotime`, or change the default permanently with `spreadjam config --autodate off` / `spreadjam config --autotime off` (use `on` to re-enable).
 - **Multi-sheet Support**: Target any tab/sheet using the `-s` or `--sheet` flags, or quickly add/delete sheets using `spreadjam add sheet <name>` and `spreadjam delete sheet <name>`.
 
 ---
@@ -118,8 +118,8 @@ To obtain Google Sheets API credentials and configure `spreadjam`, follow the st
 For a complete and detailed breakdown of each command with multiple examples, see [sheet_operations.md](sheet_operations.md).
 
 ### 1. Repository Connection Commands
-- `spreadjam init`: Initialize an empty local spreadjam repository and opens an interactive setup menu.
-- `spreadjam config`: Get or update credentials and spreadsheet ID.
+- `spreadjam init`: Initialize an empty local spreadjam repository and then prints the `--help` output.
+- `spreadjam config`: Guided first-time setup (asks for the service account JSON path and Spreadsheet ID, with a docs link for each); once set up it shows the current config. Update credentials, spreadsheet ID, and the default auto date/time behavior (`--autodate <on|off>`, `--autotime <on|off>`).
 - `spreadjam status`: Verify connection with Google Sheets API and show spreadsheet metadata.
 - `spreadjam dev`: Opens the developer's GitHub profile in a new browser tab.
 
@@ -130,7 +130,7 @@ For a complete and detailed breakdown of each command with multiple examples, se
 
 ### 3. Row Operations
 - `spreadjam add row <args...>`: Appends a row using positional values or key-value format (e.g. `col=val`).
-  - *Options*: `--autodate` (adds current date) and `--autotime` (adds current time). Creates respective columns if missing.
+  - *Auto date/time*: current date and time are added by default (creating `date`/`time` columns if missing). Use `--no-autodate` / `--no-autotime` to skip for one row; `--autodate` / `--autotime` force them on regardless of the saved default.
 - `spreadjam delete row <index>`: Deletes a row by its 1-based index below the headers.
 - `spreadjam delete data`: Deletes a specific row or column via flags (`--row <index>` or `--column <name>`).
 - `spreadjam list rows` / `spreadjam show data`: Displays sheet rows in a formatted table.
