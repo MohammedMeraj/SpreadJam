@@ -120,12 +120,14 @@ async function runSetupWizard(config) {
   }
 }
 
+const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
 const program = new Command();
 
 program
   .name('spreadjam')
   .description('A CLI for Google Sheets')
-  .version('1.0.0')
+  .option('-V, --version', 'output the installed version and check npm for a newer one')
   .addHelpText('after', `
 ${pc.cyan('Useful Links:')}
   Learn to bind spreadsheet API: ${pc.underline('https://github.com/MohammedMeraj/SpreadJam/blob/main/how_to_add_api.md')}
@@ -551,4 +553,33 @@ program
     });
   }));
 
-program.parse(process.argv);
+/** Compares dotted versions; returns true when a is newer than b. */
+function isNewer(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  }
+  return false;
+}
+
+async function printVersion() {
+  console.log(pkg.version);
+  try {
+    const res = await fetch('https://registry.npmjs.org/spreadjam/latest', { signal: AbortSignal.timeout(2500) });
+    if (!res.ok) return;
+    const latest = (await res.json()).version;
+    if (latest && isNewer(latest, pkg.version)) {
+      console.log(pc.yellow(`\nA newer version is available: ${latest} (you have ${pkg.version})`));
+      console.log(`Upgrade with: ${pc.bold('npm install -g spreadjam@latest')}`);
+    }
+  } catch (e) {
+    // offline or registry unreachable: just show the installed version
+  }
+}
+
+if (process.argv.length === 3 && ['-V', '-v', '--version'].includes(process.argv[2])) {
+  await printVersion();
+} else {
+  program.parse(process.argv);
+}
